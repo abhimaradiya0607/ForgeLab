@@ -1,3 +1,3 @@
-export async function pushrepo(params) {
+export async function pushRepo(params) {
     console.log("Pushed repo successfully");
 }
