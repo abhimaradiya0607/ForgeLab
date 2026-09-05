@@ -27,7 +27,10 @@ yargs(hideBin(process.argv))
         describe:"Commit Message",
         type:"string",
     });
-    },commitRepo)
+    },
+    (argv)=>{
+        commitRepo(argv.message);
+    })
 .command("push",
     "Push commits to S3",
     {},
