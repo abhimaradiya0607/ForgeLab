@@ -1,4 +1,30 @@
-export async function commitRepo() {
-    console.log('Commited successfull');
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {v4 as uuidv4 } from 'uuid';
+
+
+export async function commitRepo(message) {
+    const repopath=path.resolve(process.cwd(),'.ForgeLab');
+    const stagePath=path.join(repopath,"staging");
+    const commitPath=path.join(repopath,"commits");
     
+       try {
+        const commitId=uuidv4();
+        const commitDir=path.join(commitPath,commitId);
+        await fs.mkdir(commitDir,{recursive:true});
+        const files=await fs.readdir(stagePath);    
+        for(const file of files){
+            await fs.copyFile(
+                path.join(stagePath,file),
+                path.join(commitDir,file)
+            );
+        }
+        await fs.writeFile(path.join(commitDir,"commit.json"),JSON.stringify({
+            message,
+            date:new Date().toISOString(),
+        }));
+        console.log(`Commit ${commitId} created with message: ${message}`);
+       } catch (err) {
+        console.error("Error in commiting files ",err);
+       } 
 };
