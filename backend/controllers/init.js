@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { json } from 'stream/consumers';
 
 export async function initRepo() {
     const repoPath=path.resolve(process.cwd(),'.ForgeLab');
@@ -10,7 +9,7 @@ export async function initRepo() {
         await fs.mkdir(commitPath,{recursive:true});
         await fs.writeFile(
             path.join(repoPath,"config.json"),
-            JSON.stringify({bucket:process.env.S3_bucket})
+            JSON.stringify({bucket:process.env.S3_BUCKET})
         );
         console.log('Repository Initialized Successfullyy');
     } catch (err) {
