@@ -9,9 +9,9 @@ UserRouter.post('/signup',signup);
 UserRouter.post('/login',login);
 
 
-UserRouter.get('/userProfile',getUserProfile);
-UserRouter.put('/updateProfile',updateUserProfile);
-UserRouter.delete('/deleteProfile',deleteUserProfile);
+UserRouter.get('/userProfile/:id',getUserProfile);
+UserRouter.put('/updateProfile/:id',updateUserProfile);
+UserRouter.delete('/deleteProfile/:id',deleteUserProfile);
 
 export default UserRouter;
 
