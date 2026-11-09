@@ -6,6 +6,8 @@ const repoSchema=new Schema({
     name:{
         type:String,
         unique:true,
+        required:true,
+        trim: true,
     },
     description:{
         type:String,
@@ -17,6 +19,7 @@ const repoSchema=new Schema({
     ],
     visibility:{
       type:Boolean,
+      default:true,
     },
     owner:{
         type: mongoose.Schema.Types.ObjectId,
@@ -29,7 +32,9 @@ const repoSchema=new Schema({
             ref:'Issue',
         }
     ]
-});
+},
+{ timestamps: true }
+);
 
 const Repository=mongoose.model('Repository',repoSchema);
 
