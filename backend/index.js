@@ -1,16 +1,12 @@
 import express from 'express';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 import cors from 'cors';
-import bodyParser from 'body-parser';
 import http from 'http';
 import { Server } from 'socket.io';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
 import { loadEnv } from './config/load-env.js';
-loadEnv();
-
-import yargs from 'yargs';
-import {hideBin} from 'yargs/helpers'
+import { connectDB } from './config/db.js';
 import { initRepo } from './controllers/init.js';
 import { addRepo } from './controllers/add.js';
 import { commitRepo } from './controllers/commit.js';
@@ -19,7 +15,43 @@ import { pullRepo } from './controllers/pull.js';
 import { revertRepo } from './controllers/revert.js';
 import mainRouter from './routes/main.router.js';
 
-dotenv.config();
+loadEnv();
+
+async function startServer(){
+    const app = express();
+    const port=process.env.PORT || 3000;
+
+    
+    app.use(cors({ origin: '*' }));
+    app.use(express.json());
+    app.use('/', mainRouter);
+
+    const httpServer = http.createServer(app);
+
+    const io = new Server(httpServer, {
+        cors: { origin: '*', methods: ['GET', 'POST'] },
+    });
+
+    io.on('connection', (socket) => {
+        socket.on('joinRoom', (userID) => {
+            console.log(`User ${userID} joined the room`);
+            socket.join(userID);
+        });
+    });
+
+    try {
+        await connectDB();
+    } catch (err) {
+        console.error('Failed to connect to MongoDB:', err.message);
+        process.exit(1);
+    }
+
+    httpServer.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    });
+}
+
+
 
 
 yargs(hideBin(process.argv))
@@ -62,54 +94,3 @@ yargs(hideBin(process.argv))
 .demandCommand(1,'You need atleast one command')
 .help().argv;
 
-function startServer(){
-    const app = express();
-    const port=process.env.PORT || 3000;
-
-    
-    app.use(bodyParser.json());
-    app.use(express.json());
-
-    const mongoURI = process.env.MONGODB_URI;
-
-    mongoose.connect(mongoURI).then(()=>{
-        console.log("Connected to MongoDB");
-    }).catch((err)=>{
-        console.error("Error connecting to MongoDB", err);
-    })
-
-    app.use(cors({origin:'*'}));
-
-    app.use('/',mainRouter);
-
-    const httpServer = http.createServer(app);
-
-    const io=new Server(httpServer,{
-        cors:{
-            origin:'*',
-            methods:['GET','POST'],
-            credentials:true,
-        },
-    });
-
-    io.on('connection',(socket)=>{
-        socket.on("joinRoom",(userID)=>{
-            user=userID;
-            console.log("================================================");
-            console.log(`User ${userID} joined the room`);
-            console.log("================================================");
-            socket.join(userID);
-        });
-    });
-
-    const db=mongoose.connection;
-
-    db.once("open",async ()=>{
-    console.log("CRUD Operations can be performed now");
-    /* CRUD Operations */
-    });
-    
-    httpServer.listen(port,()=>{
-        console.log(`Server is running on port ${port}`);
-    });
-}

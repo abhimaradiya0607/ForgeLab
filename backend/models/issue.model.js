@@ -21,7 +21,8 @@ const issueSchema=new Schema({
         required:true,
     },
 
-});
+},
+{ timestamps: true });
 
 const Issue=mongoose.model('Issue',issueSchema);
 

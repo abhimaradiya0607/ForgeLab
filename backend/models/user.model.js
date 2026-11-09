@@ -5,37 +5,43 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
+        trim:true,
     },
     email:{
         type: String,
         required: true,
         unique: true,
+        lowercase:true,
+        trim:true,
     },
     password:{
         type:String,
+        select: false,  //keeps the password field out of user model when called .can be added if want in query.
     },
     repositories:[
         {
-            default:[],
+            
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Repository',
         }
     ],
     followedUsers:[
         {
-            default:[],
+            
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
         },
     ],
     starredRepositories:[
         {
-            default:[],
+            
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Repository',
         },
     ],
-});
+},
+{ timestamps: true }
+);
 
 const User = mongoose.model('User', userSchema);
 
