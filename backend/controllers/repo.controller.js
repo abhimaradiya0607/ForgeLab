@@ -52,37 +52,169 @@ function handleError(res, err, label) {
         message:"New Repository Created",
         repositoryId:result._id,
     })
-   } catch (error) {
+   } catch (err) {
      return handleError(res, err, 'Create Repository');
    }
 }
 
-export const getAllRepositories=(req,res)=>{
-    res.send("ALl REpoos fetched");
+export const getAllRepositories=async (req,res)=>{
+    try {
+        const repositories=await Repository.find({})
+        .populate("owner")
+        .populate("issues");
+
+        if(!repositories){
+            return res.status(404).json({message:'No Repo Found'})
+        }
+
+        return res.json(repositories);
+    } catch (err) {
+        return handleError(res, err, 'Get All Repository');
+    }
 }
 
-export const fetchRepositoryById=(req,res)=>{
-    res.send("Repoo with id fetched");
+export const fetchRepositoryById=async (req,res)=>{
+    const {id}=req.params;
+
+    if(!isValidId){
+        return res.status(404).json({message:'ID is required for the repo'})
+    }
+
+    try {
+        const repository=await Repository.find({_id:id}) //filter condition
+        .populate("owner")
+        .populate("issues");
+
+        if (repository.length === 0) {
+            return res.status(404).json({
+                message: "No repositories found"
+            });
+        }
+
+        return res.status(200).json(repository);
+
+    } catch (err) {
+        return handleError(res, err, 'Fetch Repo By Id: ');
+    }
+
 }
 
-export const fetchRepositoryByName=(req,res)=>{
-    res.send("Repoo of the name fetched");
+export const fetchRepositoryByName=async (req,res)=>{
+    const repoName=req.params.name;
+
+    if(!repoName){
+        return res.status(404).json({message:'Name is required for the repo'})
+    }
+
+    try {
+        const repository=await Repository.find({name:repoName}) //filter condition
+        .populate("owner")
+        .populate("issues");
+
+        if (repository.length === 0) {
+            return res.status(404).json({
+                message: "No repositories found"
+            });
+        }
+
+        return res.status(200).json(repository);
+
+    } catch (err) {
+        return handleError(res, err, 'Fetch Repo By Name: ');
+    }
 }
 
-export const fetchRepositoryForCurrentUser=(req,res)=>{
-    res.send("Repo of cuurent user fetched");
+export const fetchRepositoryForCurrentUser=async (req,res)=>{
+    const userId=req.user;
+
+    if(!userId){
+        return res.status(404).json({message:'You need to be authorized'})
+    }
+
+    try {
+        const repositories=await Repository.find({owner:userId});
+
+        if(!repositories || repositories.length==0){
+            return res.status(404).json({
+                message: "No repositories found"
+            });
+        }
+
+        return res.status(200).json({message:'Repositories foundd',repositories});
+    } catch (error) {
+        return handleError(res, err, 'Fetch Repo Of Current User: ');
+    }
 }
 
-export const updateRepositoryById=(req,res)=>{
-    res.send("repo updated");
+export const updateRepositoryById=async (req,res)=>{
+    const id=req.params;
+
+    const {description,content}=req.body;
+
+
+    if(!isValidId(id)){
+        return res.status(404).json({message:'Valid Id is required'});
+    }
+
+    try {
+        const repository=await Repository.findById(id);
+
+        if(!repository){
+            return res.status(404).json({message:'Repository which needs to be updated not foound'})
+        }
+
+        repository.content.push(content);
+        repository.description=description;
+
+        const updatedRepo=await Repository.save();
+
+        return res.json({message:'Repository Updated Successfullyy',updatedRepo});
+    } catch (err) {
+        return handleError(res, err, 'Error During Repo Update: ');
+    }
 }
 
-export const toggleVisibilityById=(req,res)=>{
-    res.send("Repooos visibility toggledd");
+export const toggleVisibilityById=async (req,res)=>{
+    const id=req.params;
+
+    if(!isValidId(id)){
+        return res.status(404).json({message:'Valid Id is required'});
+    }
+
+    try {
+        const repository=await Repository.findById(id);
+
+        if(!repository){
+            return res.status(404).json({message:'Repository which needs to be Toggled not foound'})
+        }
+
+        repository.visibility=!repository.visibility;
+
+        const updatedRepo=await Repository.save();
+
+        return res.json({message:'Repository Toggled Successfullyy',updatedRepo});
+    } catch (err) {
+        return handleError(res, err, 'Error During Repo Toggle: ');
+    }
 }
 
-export const deleteRepositoryById=(req,res)=>{
-    res.send("Repoo deleted");
+export const deleteRepositoryById=async(req,res)=>{
+   const id=req.params;
+
+   if(!isValidId(id)){
+    return res.status(404).json({message:'Valid Id is required'});
+   }
+
+   try {
+    const repository=await Repository.findByIdAndDelete(id);
+
+    if(!repository){
+        return res.status(404).json({message:'Cannot Delete The Repository'})
+    }
+    return res.json({message:'Repository Deleted Successfully',repository});
+   } catch (err) {
+    return handleError(res, err, 'Error During Delete: ');
+   }
 }
 
 
