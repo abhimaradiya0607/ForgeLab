@@ -361,6 +361,9 @@ export default function Dashboard() {
                     <Link to="/profile" className="text-sm text-[#A6A397] hover:text-[#EDE9DF]">
                         Profile
                     </Link>
+                    <Link to="/docs" className="text-sm text-[#A6A397] hover:text-[#EDE9DF]">
+    Docs
+</Link>
                     <button type="button" onClick={logout} className="text-[#A6A397] hover:text-[#EDE9DF]" aria-label="Log out">
                         <LogOut className="size-4" />
                     </button>

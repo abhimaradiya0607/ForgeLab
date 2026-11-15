@@ -1,14 +1,11 @@
 {
-  "name": "forgelab",
+  "name": "@abhi_patel/forgelab",
   "version": "1.0.0",
-  "description": "ForgeLab command line tool",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "description": "ForgeLab command line tool: init, add, commit, push, pull, revert, browse",
+  "scripts": {},
+  "keywords": "[\"forgelab\",\"git\",\"cli\",\"code-hosting\",\"version-control\"]",
+  "author": "Abhi Maradiya",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "forgelab": "./index.js"
@@ -22,5 +19,14 @@
   "files": [
     "index.js",
     "src"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abhimaradiya0607/ForgeLab.git",
+    "directory": "cli"
+  },
+  "homepage": "https://forge-lab-beta.vercel.app/docs",
+  "bugs": {
+    "url": "https://github.com/abhimaradiya0607/ForgeLab/issues"
+  }
 }

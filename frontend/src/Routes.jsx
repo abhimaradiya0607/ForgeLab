@@ -10,6 +10,7 @@ import RepoPage from "@/pages/RepoPage";
 import { useAuth } from './authContext'
 import { useEffect } from 'react'
 import SocialCallback from './components/auth/SocialCallback'
+import DocsLayout from './components/docs/DocsLayout'
 
 const ProjectRoutes = () => {
 
@@ -56,6 +57,9 @@ const ProjectRoutes = () => {
     },{
         path:'/repo/:id',
         element:<RepoPage />
+    },{
+        path:'/docs',
+        element:<DocsLayout/>
     }
     
   ]);
