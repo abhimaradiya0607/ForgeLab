@@ -70,17 +70,4 @@ RepoRouter.patch("/repo/toggle/:id",authenticate, toggleVisibilityById);
 RepoRouter.post("/repo/:id/star", authenticate, starRepository);
 RepoRouter.delete("/repo/:id/star", authenticate, unstarRepository);
 
-// Clears the cached file list for a repo. Called by the CLI after a push.
-RepoRouter.post("/repo/:id/cache/clear", async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        const deleted = await redis.del(`repo:${id}:state`);
-        return res.json({ cleared: deleted === 1 });
-    } catch (err) {
-        console.error("Error clearing cache:", err.message);
-        return res.status(500).json({ message: "Could not clear cache" });
-    }
-});
-
 export default RepoRouter;
