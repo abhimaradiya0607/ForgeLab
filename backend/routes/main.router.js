@@ -3,9 +3,11 @@ import UserRouter from './user.router.js';
 import RepoRouter from './repo.router.js';
 import IssueRouter from './issue.router.js';
 import AnnouncementRouter from './announcement.router.js';
+import TokenRouter from './token.router.js';
 
 const mainRouter=express.Router();
 
+mainRouter.use(TokenRouter);
 mainRouter.use(AnnouncementRouter);
 mainRouter.use(UserRouter);
 mainRouter.use(RepoRouter);
