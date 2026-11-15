@@ -1,25 +1,80 @@
-import express from 'express';
-import {getAllRepositories,fetchRepositoryById,fetchRepositoryForCurrentUser,
-    fetchRepositoryByName,deleteRepositoryById,
-    updateRepositoryById,toggleVisibilityById,createRepository } from '../controllers/repo.controller.js';
 
-const RepoRouter=express.Router();
+import express from "express";
 
-RepoRouter.post('/repo/create',createRepository);
+import { authenticate } from '../middleware/authenticate.js';
+import {
+    getAllRepositories,
+    fetchRepositoryById,
+    fetchRepositoryForCurrentUser,
+    fetchRepositoryByName,
+    deleteRepositoryById,
+    updateRepositoryById,
+    toggleVisibilityById,
+    starRepository,
+    unstarRepository,
+    createRepository,
+    searchRepositories,
+    getPublicRepositories,
+    getTrendingRepositories
+} from "../controllers/repo.controller.js";
+import { optionalAuth } from '../middleware/optionalAuth.js';
+import { getRepoTree, getRepoFile, getRepoCommits } from '../controllers/repoCode.controller.js';
+import { redis } from '../config/redis.js';
 
-RepoRouter.get('/repo/all',getAllRepositories);
+const RepoRouter = express.Router();
 
-RepoRouter.get('/repo/:id',fetchRepositoryById);
-RepoRouter.get('/repo/name/:name',fetchRepositoryByName);
-RepoRouter.get('/repo/user/:userID',fetchRepositoryForCurrentUser);
+RepoRouter.get('/repo/:id/tree', optionalAuth, getRepoTree);
+RepoRouter.get('/repo/:id/file', optionalAuth, getRepoFile);
+RepoRouter.get('/repo/:id/commits', optionalAuth, getRepoCommits);
 
+// Create repository
+RepoRouter.post("/repo/create", authenticate,createRepository);
 
-RepoRouter.put('/repo/update/:id',updateRepositoryById);
+// Get all repositories
+RepoRouter.get("/repo/all", getAllRepositories);
 
-RepoRouter.delete('/repo/delete/:id',deleteRepositoryById);
+// Search repositories
+RepoRouter.get("/repo/search", searchRepositories);
 
-RepoRouter.patch('/repo/toggle/:id',toggleVisibilityById);
+// Get only public repositories
+RepoRouter.get("/repo/public", getPublicRepositories);
 
+// Top 10 public repositories by star count
+RepoRouter.get("/repo/trending", getTrendingRepositories);
+
+// Get repositories by user
+RepoRouter.get("/repo/user/:userID", authenticate, fetchRepositoryForCurrentUser);
+
+// Get repository by name
+RepoRouter.get("/repo/name/:name", fetchRepositoryByName);
+
+// Get repository by ID
+RepoRouter.get("/repo/:id", fetchRepositoryById);
+
+// Update repository
+RepoRouter.put("/repo/update/:id",authenticate, updateRepositoryById);
+
+// Delete repository
+RepoRouter.delete("/repo/delete/:id",authenticate, deleteRepositoryById);
+
+// Toggle repository visibility
+RepoRouter.patch("/repo/toggle/:id",authenticate, toggleVisibilityById);
+
+// Star and unstar a public repository for the logged-in user
+RepoRouter.post("/repo/:id/star", authenticate, starRepository);
+RepoRouter.delete("/repo/:id/star", authenticate, unstarRepository);
+
+// Clears the cached file list for a repo. Called by the CLI after a push.
+RepoRouter.post("/repo/:id/cache/clear", async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const deleted = await redis.del(`repo:${id}:state`);
+        return res.json({ cleared: deleted === 1 });
+    } catch (err) {
+        console.error("Error clearing cache:", err.message);
+        return res.status(500).json({ message: "Could not clear cache" });
+    }
+});
 
 export default RepoRouter;
-

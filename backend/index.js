@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
@@ -14,6 +15,7 @@ import { pushRepo } from './controllers/push.js';
 import { pullRepo } from './controllers/pull.js';
 import { revertRepo } from './controllers/revert.js';
 import mainRouter from './routes/main.router.js';
+import { connectRedis } from './config/redis.js';
 
 loadEnv();
 
@@ -41,6 +43,7 @@ async function startServer(){
 
     try {
         await connectDB();
+        await connectRedis();
     } catch (err) {
         console.error('Failed to connect to MongoDB:', err.message);
         process.exit(1);
@@ -51,12 +54,18 @@ async function startServer(){
     });
 }
 
-
-
-
 yargs(hideBin(process.argv))
 .command("start","Start a server",{},startServer)
-.command("init","Initialize a Git repo",{},initRepo)
+.command("init <repoId>", "Link this folder to a ForgeLab repo",
+    (yargs) => {
+        yargs.positional("repoId", {
+            describe: "Repo ID from the ForgeLab website",
+            type: "string",
+        });
+    },
+    (argv) => {
+        initRepo(argv.repoId);
+    })
 .command("add <file>","Add a file to the repository",
     (yargs)=>{yargs.positional("file",{
         describe:"File to add to staging area",
