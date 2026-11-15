@@ -20,8 +20,14 @@ import {
 import { optionalAuth } from '../middleware/optionalAuth.js';
 import { getRepoTree, getRepoFile, getRepoCommits } from '../controllers/repoCode.controller.js';
 import { redis } from '../config/redis.js';
+import { planPush, completePush, planDownload } from '../controllers/sync.controller.js';
 
 const RepoRouter = express.Router();
+
+// Storage sync: the CLI uses these instead of AWS keys
+RepoRouter.post('/repo/:id/sync/plan', authenticate, planPush);
+RepoRouter.post('/repo/:id/sync/complete', authenticate, completePush);
+RepoRouter.get('/repo/:id/sync/download', optionalAuth, planDownload);
 
 RepoRouter.get('/repo/:id/tree', optionalAuth, getRepoTree);
 RepoRouter.get('/repo/:id/file', optionalAuth, getRepoFile);

@@ -1,51 +1,16 @@
-import { s3, s3_BUCKET } from '../config/aws-config.js';
 import { redis } from '../config/redis.js';
+import { commitKey, listKeys, readText, readJsonOrNull, writeJson } from './storage.js';
 
-
-const FILE_CACHE_LIMIT = 300;  // most file contents kept in memory
-
-
-const fileCache = new Map();   // "repoId/commitId/path" -> text
+const STATE_TTL_SECONDS = 15;
+const FILE_CACHE_LIMIT = 300;
+const fileCache = new Map();
 
 const commitsPrefix = (repoId) => `repos/${repoId}/commits/`;
 
-async function getText(key) {
-    const obj = await s3.getObject({ Bucket: s3_BUCKET, Key: key }).promise();
-    return obj.Body.toString('utf8');
-}
-
-// Returns null when the object doesn't exist yet
-async function getJsonOrNull(key) {
-    try {
-        return JSON.parse(await getText(key));
-    } catch (err) {
-        if (err.code === 'NoSuchKey') return null;
-        throw err;
-    }
-}
-
-async function listAllKeys(prefix) {
-    const keys = [];
-    let token;
-
-    do {
-        const page = await s3.listObjectsV2({
-            Bucket: s3_BUCKET,
-            Prefix: prefix,
-            ContinuationToken: token,
-        }).promise();
-
-        keys.push(...(page.Contents || []).map((obj) => obj.Key));
-        token = page.IsTruncated ? page.NextContinuationToken : undefined;
-    } while (token);
-
-    return keys;
-}
-
-// Fallback for repos pushed before index.json existed. Slow, but only used once.
+// Fallback for repos with no index.json. Slow, so it runs only once per repo.
 async function scanCommits(repoId) {
     const prefix = commitsPrefix(repoId);
-    const keys = await listAllKeys(prefix);
+    const keys = await listKeys(prefix);
 
     const filesByCommit = new Map();
     for (const key of keys) {
@@ -60,13 +25,8 @@ async function scanCommits(repoId) {
 
     const commits = await Promise.all(
         [...filesByCommit].map(async ([id, paths]) => {
-            const meta = JSON.parse(await getText(`${prefix}${id}/commit.json`));
-            return {
-                id,
-                message: meta.message,
-                date: meta.date,
-                files: paths.filter((p) => p !== 'commit.json'),
-            };
+            const meta = JSON.parse(await readText(commitKey(repoId, id, 'commit.json')));
+            return { id, message: meta.message, date: meta.date, files: paths.filter((p) => p !== 'commit.json') };
         })
     );
 
@@ -81,45 +41,32 @@ async function scanCommits(repoId) {
 }
 
 // Returns commits (newest first) and a Map of file path -> commit that holds its latest version
-const STATE_TTL_SECONDS = 15;
-
-// Returns commits (newest first) and a Map of file path -> commit that holds its latest version
 export async function loadRepoState(repoId) {
     const cacheKey = `repo:${repoId}:state`;
 
-    // 1. Try Redis first
     const cached = await redis.get(cacheKey);
-
     if (cached) {
         const manifest = JSON.parse(cached);
-        return {
-            commits: manifest.commits,
-            latest: new Map(Object.entries(manifest.files)),
-        };
+        return { commits: manifest.commits, latest: new Map(Object.entries(manifest.files)) };
     }
 
-    // 2. Cache miss: build it from S3
     const manifest =
-        (await getJsonOrNull(`repos/${repoId}/index.json`)) ?? (await scanCommits(repoId));
+        (await readJsonOrNull(`repos/${repoId}/index.json`)) ?? (await scanCommits(repoId));
 
-    // 3. Store the plain JSON in Redis. EX expires it after 15 seconds.
     await redis.set(cacheKey, JSON.stringify(manifest), { EX: STATE_TTL_SECONDS });
 
-    return {
-        commits: manifest.commits,
-        latest: new Map(Object.entries(manifest.files)),
-    };
+    return { commits: manifest.commits, latest: new Map(Object.entries(manifest.files)) };
 }
 
-// Reads one file. Commits never change, so the cache never goes stale.
+// Commits never change, so cached file contents never go stale
 export async function readFile(repoId, commitId, filePath) {
     const key = `${repoId}/${commitId}/${filePath}`;
     if (fileCache.has(key)) return fileCache.get(key);
 
-    const text = await getText(`${commitsPrefix(repoId)}${commitId}/${filePath}`);
+    const text = await readText(commitKey(repoId, commitId, filePath));
 
     if (fileCache.size >= FILE_CACHE_LIMIT) {
-        fileCache.delete(fileCache.keys().next().value); // drop the oldest entry
+        fileCache.delete(fileCache.keys().next().value);
     }
     fileCache.set(key, text);
 
