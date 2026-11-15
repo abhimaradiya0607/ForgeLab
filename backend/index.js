@@ -14,6 +14,7 @@ import { commitRepo } from './controllers/commit.js';
 import { pushRepo } from './controllers/push.js';
 import { pullRepo } from './controllers/pull.js';
 import { revertRepo } from './controllers/revert.js';
+import { browseRepo } from './controllers/browse.js';
 import mainRouter from './routes/main.router.js';
 import { connectRedis } from './config/redis.js';
 
@@ -100,6 +101,17 @@ yargs(hideBin(process.argv))
 }, (argv)=>{
         revertRepo(argv.commitID);
     })
+    .command(
+        'browse [file]',
+        'Show the latest code for this repo from the website',
+        (yargs) => {
+            yargs.positional('file', {
+                describe: 'File path to view, such as src/app.js',
+                type: 'string',
+            });
+        },
+        (argv) => browseRepo(argv.file)
+    )
 .demandCommand(1,'You need atleast one command')
 .help().argv;
 
