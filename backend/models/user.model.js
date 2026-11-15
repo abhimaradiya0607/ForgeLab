@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
+    clerkId: {
+            type: String,
+            unique: true,
+            sparse: true,   // IMPORTANT: lets many users have NO clerkId
+          },
     username:{
         type: String,
         required: true,
@@ -17,6 +22,10 @@ const userSchema = new mongoose.Schema({
     password:{
         type:String,
         select: false,  //keeps the password field out of user model when called .can be added if want in query.
+    },
+    isAdmin: { 
+        type: Boolean,
+        default: false 
     },
     repositories:[
         {

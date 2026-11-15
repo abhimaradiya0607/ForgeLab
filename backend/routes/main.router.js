@@ -2,9 +2,11 @@ import express from 'express';
 import UserRouter from './user.router.js';
 import RepoRouter from './repo.router.js';
 import IssueRouter from './issue.router.js';
+import AnnouncementRouter from './announcement.router.js';
 
 const mainRouter=express.Router();
 
+mainRouter.use(AnnouncementRouter);
 mainRouter.use(UserRouter);
 mainRouter.use(RepoRouter);
 mainRouter.use(IssueRouter);
